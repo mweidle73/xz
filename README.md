@@ -37,6 +37,7 @@ generated source into a private temporary work area, configures and builds the
 project, and runs the complete upstream test suite in a non-root, read-only
 container without network access or Linux capabilities.
 
-The weekly upstream monitor checks whether `master` still matches the
-authoritative Tukaani repository. It reports drift but never updates branches
+The weekly upstream monitor checks whether `master` and every official `v*`
+release-tag ref still match the authoritative Tukaani repository. It reports
+missing, additional or moved refs but never updates branches or tags
 automatically.
