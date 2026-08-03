@@ -1,0 +1,32 @@
+#!/bin/sh
+
+set -eu
+
+WORK_DIR=$(mktemp -d)
+SOURCE_DIR="$WORK_DIR/source"
+BUILD_DIR="$WORK_DIR/build"
+
+cleanup()
+{
+    rm -rf "$WORK_DIR"
+}
+trap cleanup EXIT HUP INT TERM
+
+echo "ci: preparing a private writable source tree"
+cp -a /source "$SOURCE_DIR"
+mkdir "$BUILD_DIR"
+
+echo "ci: configuring the regenerated XZ Utils 5.2.5 source"
+cd "$BUILD_DIR"
+"$SOURCE_DIR/configure"
+
+echo "ci: building XZ Utils"
+make -j8
+
+echo "ci: running the complete upstream test suite"
+make check
+
+echo "ci: checking the built command-line tool"
+./src/xz/xz --version | grep -F 'xz (XZ Utils) 5.2.5'
+
+echo "ci: all historical Abuild-fork checks passed"

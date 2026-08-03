@@ -1,0 +1,56 @@
+name: Upstream Monitor
+
+on:
+  schedule:
+    - cron: "41 5 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compare-upstream:
+    name: Compare official master
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out the GitHub master mirror
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: master
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Compare with the official upstream
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags \
+            https://github.com/tukaani-project/xz.git \
+            refs/heads/master:refs/remotes/upstream/master
+
+          github_sha=$(git rev-parse HEAD)
+          upstream_sha=$(git rev-parse refs/remotes/upstream/master)
+          read -r github_only upstream_only <<EOF
+          $(git rev-list --left-right --count \
+            HEAD...refs/remotes/upstream/master)
+          EOF
+
+          {
+            echo "## Official upstream status"
+            echo
+            echo "| Ref | Commit |"
+            echo "| --- | --- |"
+            echo "| GitHub \`master\` | \`$github_sha\` |"
+            echo "| Official \`master\` | \`$upstream_sha\` |"
+            echo
+            echo "GitHub-only commits: $github_only"
+            echo
+            echo "Upstream-only commits: $upstream_only"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if test "$github_sha" != "$upstream_sha"; then
+            echo "GitHub master differs from the official upstream" >&2
+            exit 1
+          fi

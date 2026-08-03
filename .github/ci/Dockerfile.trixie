@@ -1,0 +1,23 @@
+FROM debian:trixie
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    autoconf \
+    automake \
+    autopoint \
+    gcc \
+    gettext \
+    libtool \
+    make \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY . /source
+
+# Regenerate configure from the patched configure.ac. Using the release's
+# pre-generated configure script would leave the sole Abuild change untested.
+RUN cd /source && ./autogen.sh --no-po4a
+
+WORKDIR /work
+
+CMD ["/bin/sh"]
